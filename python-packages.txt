@@ -1,0 +1,17 @@
+jupyterlab
+numpy
+scipy
+pandas
+matplotlib
+seaborn
+sklearn
+pydot-ng
+scikit-cuda
+keras
+theano
+pymc3
+torchvision
+graphviz
+onnx
+opencv-contrib-python
+pillow
