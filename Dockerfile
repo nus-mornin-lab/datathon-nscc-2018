@@ -141,7 +141,7 @@ RUN rm -rf /var/lib/apt/lists/* && \
 
 WORKDIR /opt/bin
 ENV PATH /opt/bin:$PATH
-RUN echo "!#/bin/bash" >> python && \
+RUN echo "#!/bin/bash" >> python && \
     echo 'python3.6 "$@"' >> python && \
     chmod +x python
 WORKDIR /
