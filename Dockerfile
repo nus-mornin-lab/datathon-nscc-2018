@@ -44,8 +44,8 @@ RUN apt-get update && \
         r-recommended && \
     curl -fSsL -O https://bootstrap.pypa.io/get-pip.py && \
     python3.6 get-pip.py && \
-    rm -f get-pip.py
-RUN pip install --no-cache-dir cython cmake numpy pyyaml cffi future protobuf
+    rm -f get-pip.py && \
+    pip install --no-cache-dir cython cmake numpy pyyaml cffi future protobuf
 
 RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so && \
     ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so.1 && \
