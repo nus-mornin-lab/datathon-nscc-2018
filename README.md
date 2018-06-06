@@ -13,9 +13,9 @@ docker run \
     /bin/bash -c \
     "export HOME=$HOME; \
     export USER=$USER; \
+    cd $HOME; \
     jupyter lab \
         --LabApp.open_browser=False \
         --LabApp.ip='0.0.0.0' \
-        --LabApp.notebook_dir=$HOME \
         --LabApp.token=''"
 ```
