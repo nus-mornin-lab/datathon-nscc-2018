@@ -19,6 +19,10 @@ RUN apt-get update && \
 FROM base as mxnet
 WORKDIR /
 COPY mxnet_cuda_arch.patch /
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libjemalloc-dev \
+    libopencv-dev
 RUN git clone --branch=v1.2.0 --depth=1 --recursive https://github.com/apache/incubator-mxnet mxnet && \
     cd mxnet && \
     patch < /mxnet_cuda_arch.patch && \
