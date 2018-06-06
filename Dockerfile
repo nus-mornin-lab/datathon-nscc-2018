@@ -9,6 +9,11 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libopenblas-dev \
         python3.6-dev \
+        git \
+        curl \
+        wget \
+        rsync \
+        vim \
         r-base-dev \
         r-recommended && \
     rm -rf /var/lib/apt/lists/* && \
