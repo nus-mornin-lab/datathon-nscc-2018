@@ -1,6 +1,6 @@
-# `Dockerfile` for [NUS-MIT Datathon 2018](http://www.nus-datathon.com) `nscc` server setup
+# `Dockerfile` for [NUS-MIT Datathon 2018](http://www.nus-datathon.com) server setup @ nscc
 
-Running `jupyter`
+Run `jupyter`
 
 ```sh
 docker run \
@@ -17,4 +17,15 @@ docker run \
     "jupyter lab \
         --LabApp.open_browser=False \
         --LabApp.ip='0.0.0.0'"
+```
+
+Run `jupyter` @ nscc
+
+```sh
+nvidia-docker-run --net=host kiend/datathon-nscc:cuda9.0-ubuntu16.04 << EOF
+    export HOME=$HOME
+    export USER=$USER
+    cd $HOME
+    jupyter lab --LabApp.ip='0.0.0.0'
+EOF
 ```
