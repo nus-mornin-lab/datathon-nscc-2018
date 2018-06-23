@@ -7,8 +7,8 @@ RUN apt-get update && \
     add-apt-repository -y ppa:jonathonf/python-3.6 && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        liblapack-dev \
         libopenblas-dev \
+        liblapack-dev \
         libcurl4-openssl-dev \
         libjemalloc-dev \
         libopencv-dev \
@@ -34,6 +34,7 @@ RUN apt-get update && \
         rsync \
         curl \
         wget \
+        tmux \
         git \
         mercurial \
         zip \
