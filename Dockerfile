@@ -28,6 +28,7 @@ RUN apt-get update && \
         libgflags-dev \
         libsqlite3-dev \
         graphviz \
+        jags \
         pkg-config \
         cmake \
         vim \

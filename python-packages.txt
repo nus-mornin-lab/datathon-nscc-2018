@@ -7,9 +7,10 @@ seaborn
 sklearn
 pydot-ng
 scikit-cuda
-keras
+keras-mxnet
 theano
 pymc3
+nltk
 torchvision
 graphviz
 onnx

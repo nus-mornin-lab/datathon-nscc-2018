@@ -3,6 +3,10 @@ pkgs <- c(
   "tidyverse",
   "data.table",
   "caret",
+  "rjags",
+  "e1071",
+  "gbm",
+  "tableone",
   "tensorflow",
   "keras"
 )
