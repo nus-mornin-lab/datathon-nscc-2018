@@ -52,14 +52,14 @@ RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.s
     ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so.1 && \
     ldconfig
 ENV BAZEL_VERSION 0.12.0
-WORKDIR /bazel
-RUN curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -O https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh && \
+WORKDIR /
+RUN mkdir bazel && cd bazel && \
+    curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -O https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh && \
     curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -o /bazel/LICENSE.txt https://raw.githubusercontent.com/bazelbuild/bazel/master/LICENSE && \
     chmod +x bazel-*.sh && \
     ./bazel-$BAZEL_VERSION-installer-linux-x86_64.sh && \
-    rm -f bazel-$BAZEL_VERSION-installer-linux-x86_64.sh && \
+    cd / && rm -rf /bazel && \
     echo "build --spawn_strategy=standalone --genrule_strategy=standalone" >> /etc/bazel.bazelrc
-WORKDIR /
 ARG COMPUTE_CAPABILITIES=6.1,7.0
 ENV CI_BUILD_PYTHON=python3.6 \
     TF_NEED_CUDA=1 \
@@ -70,8 +70,10 @@ ENV CI_BUILD_PYTHON=python3.6 \
     TF_CUDNN_VERSION=7 \
     CUDNN_INSTALL_PATH=/usr/lib/x86_64-linux-gnu \
     TF_CUDA_COMPUTE_CAPABILITIES=$COMPUTE_CAPABILITIES
+COPY tensorflow_nasm_urls.patch /
 RUN git clone --branch=r1.8 --depth=1 https://github.com/tensorflow/tensorflow.git && \
     cd tensorflow && \
+    patch < /tensorflow_nasm_urls.patch && \
     tensorflow/tools/ci_build/builds/configured GPU \
     bazel build -c opt --copt=-mavx --config=cuda \
         --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" \
