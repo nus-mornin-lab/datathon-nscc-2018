@@ -21,12 +21,19 @@ RUN apt-get update && \
         libpng12-dev \
         libzmq3-dev \
         libgoogle-glog-dev \
+        libgtest-dev \
         libiomp-dev \
+        libopenmpi-dev \
         libsnappy-dev \
+        liblmdb-dev \
+        libleveldb-dev \
+        libboost-all-dev \
         libprotobuf-dev \
         protobuf-compiler \
         libgflags-dev \
         libsqlite3-dev \
+        openmpi-bin \
+        openmpi-doc \
         graphviz \
         jags \
         pkg-config \
@@ -61,7 +68,6 @@ RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.s
     ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so.1 && \
     ldconfig
 ENV BAZEL_VERSION 0.12.0
-WORKDIR /
 RUN mkdir bazel && cd bazel && \
     curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -O https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh && \
     curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -o /bazel/LICENSE.txt https://raw.githubusercontent.com/bazelbuild/bazel/master/LICENSE && \
@@ -72,9 +78,6 @@ RUN mkdir bazel && cd bazel && \
 ARG COMPUTE_CAPABILITIES=6.1,7.0
 ENV TF_NEED_CUDA=1 \
     TF_CUDA_VERSION=$CUDA_VERSION \
-    TF_NEED_GCP=0 \
-    TF_NEED_S3=0 \
-    TF_NEED_KAFKA=0 \
     TF_CUDNN_VERSION=7 \
     CUDNN_INSTALL_PATH=/usr/lib/x86_64-linux-gnu \
     TF_CUDA_COMPUTE_CAPABILITIES=$COMPUTE_CAPABILITIES
@@ -141,6 +144,18 @@ RUN git clone --branch=v1.2.0 --depth=1 --recursive https://github.com/apache/in
         USE_NCCL=1 USE_NCCL_PATH=/usr/lib/x86_64-linux-gnu && \
     cd python && python setup.py install && \
     cd / && rm -rf /mxnet mxnet_cuda_arch.patch
+
+COPY Makefile.config /
+RUN git clone --branch=1.0 --depth=1 --recursive https://github.com/BVLC/caffe.git && \
+    cd caffe && \
+    mv /Makefile.config . && \
+    make -j all && \
+    make distribute && \
+    echo "/caffe/python" >> /usr/local/lib/python3.6/dist-packages/caffe.pth && \
+    cp ./distribute/lib/* /usr/lib/ && \
+    cp ./distribute/include/* /usr/include && \
+    cp ./distribute/bin/* /usr/bin/ && \
+    ldconfig
 
 COPY packages.r python-packages.txt /
 RUN pip install --no-cache-dir -r python-packages.txt && \
