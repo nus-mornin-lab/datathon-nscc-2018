@@ -90,7 +90,7 @@ RUN git clone --branch=r1.8 --depth=1 https://github.com/tensorflow/tensorflow.g
     pip install --no-cache-dir tensorflow*.whl && \
     cd / && rm -rf /tensorflow /usr/local/cuda/lib64/libcuda.so*
 
-RUN git clone --branch=v0.72 --depth=1 --recursive https://github.com/dmlc/xgboost.git && \
+RUN git clone --branch=release_0.72 --depth=1 --recursive https://github.com/dmlc/xgboost.git && \
     cd xgboost && mkdir build && cd build && \
     cmake .. -DUSE_CUDA=ON && make -j && \
     cd ../python-package && \
