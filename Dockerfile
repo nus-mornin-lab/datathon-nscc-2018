@@ -43,6 +43,7 @@ RUN apt-get update && \
         python3.6-dev \
         r-base-dev \
         r-recommended && \
+    rm -rf /var/lib/apt/lists/* && \
     curl -fSsL -O https://bootstrap.pypa.io/get-pip.py && \
     python3.6 get-pip.py && \
     rm -f get-pip.py && \
@@ -135,8 +136,7 @@ RUN git clone --branch=v1.2.0 --depth=1 --recursive https://github.com/apache/in
     cd / && rm -rf /mxnet mxnet_cuda_arch.patch
 
 COPY packages.r python-packages.txt /
-RUN rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir -r python-packages.txt && \
+RUN pip install --no-cache-dir -r python-packages.txt && \
     Rscript packages.r && \
     git clone --branch=0.8.11 --depth=1 --recursive https://github.com/IRkernel/IRkernel.git && \
     Rscript -e "devtools::install_local('IRkernel'); IRkernel::installspec(user = FALSE)" && \
