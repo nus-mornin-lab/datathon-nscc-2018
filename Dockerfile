@@ -75,7 +75,7 @@ ENV CI_BUILD_PYTHON=python3.6 \
 COPY tensorflow_nasm_urls.patch /
 RUN git clone --branch=r1.8 --depth=1 https://github.com/tensorflow/tensorflow.git && \
     cd tensorflow && \
-    patch < /tensorflow_nasm_urls.patch && \
+    patch -p1 < /tensorflow_nasm_urls.patch && \
     tensorflow/tools/ci_build/builds/configured GPU \
     bazel build -c opt --copt=-mavx --config=cuda \
         --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" \
@@ -130,7 +130,7 @@ RUN git clone --branch=v0.4.0 --depth=1 --recursive https://github.com/pytorch/p
 COPY mxnet_cuda_arch.patch /
 RUN git clone --branch=v1.2.0 --depth=1 --recursive https://github.com/apache/incubator-mxnet mxnet && \
     cd mxnet && \
-    patch < /mxnet_cuda_arch.patch && \
+    patch -p1 < /mxnet_cuda_arch.patch && \
     make -j USE_OPENCV=1 USE_BLAS=openblas USE_CUDA=1 USE_CUDA_PATH=/usr/local/cuda USE_CUDNN=1 \
         USE_NCCL=1 USE_NCCL_PATH=/usr/lib/x86_64-linux-gnu && \
     cd python && python3.6 setup.py install && \
