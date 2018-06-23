@@ -38,6 +38,7 @@ RUN apt-get update && \
         jags \
         pkg-config \
         cmake \
+        less \
         vim \
         rsync \
         curl \
