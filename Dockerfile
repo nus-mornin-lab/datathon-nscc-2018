@@ -44,11 +44,18 @@ RUN apt-get update && \
         python3.6-dev \
         r-base-dev \
         r-recommended && \
-    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/bin
+ENV PATH /opt/bin:$PATH
+RUN echo "#!/bin/bash" >> python && \
+    echo 'python3.6 "$@"' >> python && \
+    chmod +x python && \
     curl -fSsL -O https://bootstrap.pypa.io/get-pip.py && \
-    python3.6 get-pip.py && \
+    python get-pip.py && \
     rm -f get-pip.py && \
     pip install --no-cache-dir cython cmake numpy pyyaml cffi future protobuf
+WORKDIR /
 
 RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so && \
     ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so.1 && \
@@ -63,8 +70,7 @@ RUN mkdir bazel && cd bazel && \
     cd / && rm -rf /bazel && \
     echo "build --spawn_strategy=standalone --genrule_strategy=standalone" >> /etc/bazel.bazelrc
 ARG COMPUTE_CAPABILITIES=6.1,7.0
-ENV CI_BUILD_PYTHON=python3.6 \
-    TF_NEED_CUDA=1 \
+ENV TF_NEED_CUDA=1 \
     TF_CUDA_VERSION=$CUDA_VERSION \
     TF_NEED_GCP=0 \
     TF_NEED_S3=0 \
@@ -88,7 +94,7 @@ RUN git clone --branch=v0.72 --depth=1 --recursive https://github.com/dmlc/xgboo
     cd xgboost && mkdir build && cd build && \
     cmake .. -DUSE_CUDA=ON && make -j && \
     cd ../python-package && \
-    python3.6 setup.py install && \
+    python setup.py install && \
     cd .. && rm -rf build && mkdir build && cd build && \
     cmake .. -DUSE_CUDA=ON -DR_LIB=ON && \
     make -j install && \
@@ -96,7 +102,7 @@ RUN git clone --branch=v0.72 --depth=1 --recursive https://github.com/dmlc/xgboo
 
 RUN git clone --depth=1 --recursive https://github.com/pytorch/pytorch.git && \
     cd pytorch && \
-    python3.6 setup_caffe2.py install && \
+    python setup_caffe2.py install && \
     cd / && rm -rf /pytorch
 
 RUN git clone --branch=v0.7.6 --depth=1 https://github.com/Theano/libgpuarray.git && \
@@ -106,14 +112,14 @@ RUN git clone --branch=v0.7.6 --depth=1 https://github.com/Theano/libgpuarray.gi
     make -j && make install && \
     ldconfig && \
     cd .. && \
-    python3.6 setup.py build && python3.6 setup.py install && \
+    python setup.py build && python setup.py install && \
     cd / && rm -rf /libgpuarray
 ENV PYCUDA_VERSION 2017.1.1
 RUN pip download --no-cache-dir --no-deps pycuda && \
     tar xvf pycuda-$PYCUDA_VERSION.tar.gz && \
     cd pycuda-$PYCUDA_VERSION && \
-    python3.6 configure.py && \
-    python3.6 setup.py install && \
+    python configure.py && \
+    python setup.py install && \
     cd / && rm -rf pycuda-$PYCUDA_VERSION*
 
 COPY make.inc /
@@ -124,7 +130,7 @@ RUN hg clone https://bitbucket.org/icl/magma && cd magma && \
 
 RUN git clone --branch=v0.4.0 --depth=1 --recursive https://github.com/pytorch/pytorch.git && \
     cd pytorch && \
-    NCCL_ROOT_DIR=/usr/lib/x86_64-linux-gnu python3.6 setup.py install && \
+    NCCL_ROOT_DIR=/usr/lib/x86_64-linux-gnu python setup.py install && \
     cd / && rm -rf /pytorch
 
 COPY mxnet_cuda_arch.patch /
@@ -133,7 +139,7 @@ RUN git clone --branch=v1.2.0 --depth=1 --recursive https://github.com/apache/in
     patch -p1 < /mxnet_cuda_arch.patch && \
     make -j USE_OPENCV=1 USE_BLAS=openblas USE_CUDA=1 USE_CUDA_PATH=/usr/local/cuda USE_CUDNN=1 \
         USE_NCCL=1 USE_NCCL_PATH=/usr/lib/x86_64-linux-gnu && \
-    cd python && python3.6 setup.py install && \
+    cd python && python setup.py install && \
     cd / && rm -rf /mxnet mxnet_cuda_arch.patch
 
 COPY packages.r python-packages.txt /
@@ -142,12 +148,5 @@ RUN pip install --no-cache-dir -r python-packages.txt && \
     git clone --branch=0.8.11 --depth=1 --recursive https://github.com/IRkernel/IRkernel.git && \
     Rscript -e "devtools::install_local('IRkernel'); IRkernel::installspec(user = FALSE)" && \
     rm -rf IRkernel packages.r python-packages.txt
-
-WORKDIR /opt/bin
-ENV PATH /opt/bin:$PATH
-RUN echo "#!/bin/bash" >> python && \
-    echo 'python3.6 "$@"' >> python && \
-    chmod +x python
-WORKDIR /
 
 EXPOSE 8888
