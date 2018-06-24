@@ -41,10 +41,12 @@ RUN apt-get update && \
         cmake \
         less \
         vim \
+        emacs \
         rsync \
         curl \
         wget \
         tmux \
+        ed \
         git \
         mercurial \
         zip \
