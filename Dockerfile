@@ -82,7 +82,7 @@ ENV TF_NEED_CUDA=1 \
     TF_CUDNN_VERSION=7 \
     CUDNN_INSTALL_PATH=/usr/lib/x86_64-linux-gnu \
     TF_CUDA_COMPUTE_CAPABILITIES=$COMPUTE_CAPABILITIES
-WORKDIR /opt/tensorflow
+WORKDIR /tensorflow
 RUN git clone --branch=r1.8 --depth=1 https://github.com/tensorflow/tensorflow.git .
 COPY tensorflow_nasm_urls.patch ./
 RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1 && \
@@ -93,10 +93,11 @@ RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/lib
         --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" \
         tensorflow/tools/pip_package:build_pip_package
 RUN bazel-bin/tensorflow/tools/pip_package/build_pip_package . && \
-    pip install --no-cache-dir tensorflow*.whl &&\
-    rm -f /usr/local/cuda/lib64/libcuda.so.1
+    pip install --no-cache-dir tensorflow*.whl
+WORKDIR /
+RUN rm -rf tensorflow /usr/local/cuda/lib64/libcuda.so.1
 
-WORKDIR /opt/xgboost
+WORKDIR /xgboost
 RUN git clone --branch=release_0.72 --depth=1 https://github.com/dmlc/xgboost.git . && \
     git submodule update --init -j $(( $(nproc) + 1 )) && \
     mkdir build && cd build && \
@@ -106,16 +107,20 @@ RUN git clone --branch=release_0.72 --depth=1 https://github.com/dmlc/xgboost.gi
     cd .. && rm -rf build && mkdir build && cd build && \
     cmake .. -DUSE_CUDA=ON -DR_LIB=ON && \
     make -j install
+WORKDIR /
+RUN rm -rf xgboost
 
-WORKDIR /opt/caffe2
+WORKDIR /caffe2
 RUN git clone --depth=1 https://github.com/pytorch/pytorch.git . && \
     git submodule update --init -j $(( $(nproc) + 1 )) && \
     mkdir build && cd build && \
     cmake .. && make -j install
-RUN echo "import sys\nsys.path.append('/usr/local/lib/python3/dist-packages')" >> \
+WORKDIR /
+RUN rm -rf caffe2 && \
+    echo "import sys\nsys.path.append('/usr/local/lib/python3/dist-packages')" >> \
         /usr/local/lib/python3.6/dist-packages/caffe2_path.py
 
-WORKDIR /opt/libgpuarray
+WORKDIR /libgpuarray
 RUN git clone --branch=v0.7.6 --depth=1 https://github.com/Theano/libgpuarray.git . && \
     mkdir build && cd build && \
     cmake .. -DCMAKE_BUILD_TYPE=Release && \
@@ -123,49 +128,56 @@ RUN git clone --branch=v0.7.6 --depth=1 https://github.com/Theano/libgpuarray.gi
     ldconfig && \
     cd .. && \
     python setup.py build && python setup.py install
-WORKDIR /opt
+WORKDIR /
+RUN rm -rf libgpuarray
 ENV PYCUDA_VERSION 2017.1.1
 RUN pip download --no-cache-dir --no-deps pycuda && \
     tar xvf pycuda-$PYCUDA_VERSION.tar.gz && \
     cd pycuda-$PYCUDA_VERSION && \
     python configure.py && \
     python setup.py install && \
-    cd .. && rm -f pycuda-*.tar.gz
+    cd .. && rm -rf pycuda-*
 
-WORKDIR /opt/magma
+WORKDIR /magma
 RUN hg clone https://bitbucket.org/icl/magma .
 COPY ["make.inc", "magma_codegen.patch", "./"]
 RUN patch -p1 < magma_codegen.patch && \
     make -j lib && make -j sparse-lib && make install prefix=/usr/local/magma
-RUN echo "/usr/local/magma/lib" >> /etc/ld.so.conf.d/magma.conf && ldconfig
+WORKDIR /
+RUN rm -rf magma && \
+    echo "/usr/local/magma/lib" >> /etc/ld.so.conf.d/magma.conf && ldconfig
 
-WORKDIR /opt/pytorch
+WORKDIR /pytorch
 RUN git clone --depth=1 https://github.com/pytorch/pytorch.git . && \
     git submodule update --init -j $(( $(nproc) + 1 )) && \
     NCCL_ROOT_DIR=/usr/lib/x86_64-linux-gnu python setup.py install
+WORKDIR /
+RUN rm -rf pytorch
 
-WORKDIR /opt/mxnet
+WORKDIR /mxnet
 RUN git clone --branch=v1.2.0 --depth=1 https://github.com/apache/incubator-mxnet .
 COPY mxnet_cuda_arch.patch ./
 RUN git submodule update --init --recursive -j $(( $(nproc) + 1 )) && \
     patch -p1 < mxnet_cuda_arch.patch && \
     make -j USE_OPENCV=1 USE_BLAS=openblas USE_CUDA=1 USE_CUDA_PATH=/usr/local/cuda USE_CUDNN=1 \
-        USE_NCCL=1 USE_NCCL_PATH=/usr/lib/x86_64-linux-gnu
-RUN cd python && python setup.py install
+        USE_NCCL=1 USE_NCCL_PATH=/usr/lib/x86_64-linux-gnu && \
+    cd python && python setup.py install
+WORKDIR /
+RUN rm -rf mxnet
 
 WORKDIR /opt/caffe
 RUN git clone --branch=1.0 --depth=1 https://github.com/BVLC/caffe.git .
 COPY Makefile.config ./
 RUN make -j all && \
-    make distribute
-RUN echo "import sys\nsys.path.append('/opt/caffe/python')" >> \
+    make distribute && \
+    echo "import sys\nsys.path.append('/opt/caffe/python')" >> \
         /usr/local/lib/python3.6/dist-packages/caffe_path.py && \
     cp -r ./distribute/lib/* /usr/lib/ && \
-    cp -r ./distribute/include/* /usr/include && \
+    cp -r ./distribute/include/* /usr/include/ && \
     cp -r ./distribute/bin/* /usr/bin/ && \
     ldconfig
 
-WORKDIR /opt
+WORKDIR /
 COPY packages.r python-packages.txt ./
 RUN pip install --no-cache-dir -r python-packages.txt && \
     Rscript packages.r && \
