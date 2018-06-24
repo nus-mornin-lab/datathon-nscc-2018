@@ -168,7 +168,11 @@ RUN rm -rf mxnet
 WORKDIR /opt/caffe
 RUN git clone --branch=1.0 --depth=1 https://github.com/BVLC/caffe.git .
 COPY Makefile.config ./
-RUN make -j all && \
+RUN ln -s /usr/lib/x86_64-linux-gnu/libboost_python-py35.so \
+       /usr/lib/x86_64-linux-gnu/libboost_python3.so && \
+    ldconfig && \
+    pip install --no-cache-dir scikit-image && \
+    make -j all && \
     make distribute && \
     echo "import sys\nsys.path.append('/opt/caffe/python')" >> \
         /usr/local/lib/python3.6/dist-packages/caffe_path.py && \
