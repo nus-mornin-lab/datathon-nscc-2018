@@ -41,6 +41,7 @@ Default `python` (`/opt/bin/python`) uses `python 3.6.5`.
 - `caffe2`*
 - `theano`
 - `keras` (`keras-mxnet`)
+- `xgboost`
 - `pymc3`
 - Packages in the pydata stack: `numpy`, `scipy`, `pandas`, `sklearn`, `matplotlib`, ... Run `pip list` for the full list.
 
@@ -59,12 +60,15 @@ import caffe2
 ```
 
 ### R
+version `3.5.0`
 #### Pre-installed packages:
 - `tidyverse`
     - `dplyr`
     - `tidyr`
     - `ggplot2`
     - ...
+- `data.table`
+- `xgboost`
 - `caret`
 - `rjags`
 - `tensorflow`
