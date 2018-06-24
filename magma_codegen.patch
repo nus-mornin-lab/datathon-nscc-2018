@@ -1,0 +1,12 @@
+diff -r 1fa66ee313f4 Makefile
+--- a/Makefile	Thu Jun 21 16:05:43 2018 -0400
++++ b/Makefile	Sat Jun 23 21:37:38 2018 +0800
+@@ -62,7 +62,7 @@
+ # where testers look for MAGMA libraries
+ RPATH      = -Wl,-rpath,${abspath ./lib}
+ 
+-codegen    = python tools/codegen.py
++codegen    = python2 tools/codegen.py
+ 
+ 
+ # ------------------------------------------------------------------------------

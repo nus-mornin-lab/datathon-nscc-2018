@@ -5,6 +5,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends software-properties-common && \
     add-apt-repository -y ppa:marutter/rrutter3.5 && \
     add-apt-repository -y ppa:jonathonf/python-3.6 && \
+    add-apt-repository -y ppa:git-core/ppa && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         libopenblas-dev \
@@ -69,55 +70,67 @@ RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.s
     ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so.1 && \
     ldconfig
 ENV BAZEL_VERSION 0.12.0
-RUN mkdir bazel && cd bazel && \
-    curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -O https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh && \
+WORKDIR /bazel
+RUN curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -O https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh && \
     curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -o /bazel/LICENSE.txt https://raw.githubusercontent.com/bazelbuild/bazel/master/LICENSE && \
     chmod +x bazel-*.sh && \
     ./bazel-$BAZEL_VERSION-installer-linux-x86_64.sh && \
-    cd / && rm -rf /bazel && \
     echo "build --spawn_strategy=standalone --genrule_strategy=standalone" >> /etc/bazel.bazelrc
+WORKDIR /
+RUN rm -rf /bazel
+
 ARG COMPUTE_CAPABILITIES=6.1,7.0
 ENV TF_NEED_CUDA=1 \
     TF_CUDA_VERSION=$CUDA_VERSION \
     TF_CUDNN_VERSION=7 \
     CUDNN_INSTALL_PATH=/usr/lib/x86_64-linux-gnu \
     TF_CUDA_COMPUTE_CAPABILITIES=$COMPUTE_CAPABILITIES
-COPY tensorflow_nasm_urls.patch /
-RUN git clone --branch=r1.8 --depth=1 https://github.com/tensorflow/tensorflow.git && \
-    cd tensorflow && \
-    patch -p1 < /tensorflow_nasm_urls.patch && \
+WORKDIR /tensorflow
+RUN git clone --branch=r1.8 --depth=1 https://github.com/tensorflow/tensorflow.git .
+COPY tensorflow_nasm_urls.patch ./
+RUN patch -p1 < tensorflow_nasm_urls.patch && \
     tensorflow/tools/ci_build/builds/configured GPU \
     bazel build -c opt --copt=-mavx --config=cuda \
         --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" \
         tensorflow/tools/pip_package:build_pip_package && \
     bazel-bin/tensorflow/tools/pip_package/build_pip_package . && \
-    pip install --no-cache-dir tensorflow*.whl && \
-    cd / && rm -rf /tensorflow /usr/local/cuda/lib64/libcuda.so*
+    pip install --no-cache-dir tensorflow*.whl
+WORKDIR /
+RUN rm -rf /tensorflow /usr/local/cuda/lib64/libcuda.so*
 
-RUN git clone --branch=release_0.72 --depth=1 --recursive https://github.com/dmlc/xgboost.git && \
-    cd xgboost && mkdir build && cd build && \
+WORKDIR /xgboost
+RUN git clone --branch=release_0.72 --depth=1 https://github.com/dmlc/xgboost.git . && \
+    git submodule update --init -j $(( $(nproc) + 1 )) && \
+    mkdir build && cd build && \
     cmake .. -DUSE_CUDA=ON && make -j && \
     cd ../python-package && \
     python setup.py install && \
     cd .. && rm -rf build && mkdir build && cd build && \
     cmake .. -DUSE_CUDA=ON -DR_LIB=ON && \
-    make -j install && \
-    cd / && rm -rf /xgboost
+    make -j install
+WORKDIR /
+RUN rm -rf /xgboost
 
-RUN git clone --depth=1 --recursive https://github.com/pytorch/pytorch.git && \
-    cd pytorch && \
-    python setup_caffe2.py install && \
-    cd / && rm -rf /pytorch
+WORKDIR /caffe2
+RUN git clone --depth=1 https://github.com/pytorch/pytorch.git . && \
+    git submodule update --init -j $(( $(nproc) + 1 )) && \
+    mkdir build && cd build && \
+    cmake .. && make -j install
+WORKDIR /
+RUN rm -rf /caffe2 && \
+    echo "import sys\nsys.path.append('/usr/local/lib/python3/dist-packages')" >> \
+        /usr/local/lib/python3.6/dist-packages/caffe2_path.py
 
-RUN git clone --branch=v0.7.6 --depth=1 https://github.com/Theano/libgpuarray.git && \
-    cd libgpuarray && \
+WORKDIR /libgpuarray
+RUN git clone --branch=v0.7.6 --depth=1 https://github.com/Theano/libgpuarray.git . && \
     mkdir build && cd build && \
     cmake .. -DCMAKE_BUILD_TYPE=Release && \
     make -j && make install && \
     ldconfig && \
     cd .. && \
-    python setup.py build && python setup.py install && \
-    cd / && rm -rf /libgpuarray
+    python setup.py build && python setup.py install
+WORKDIR /
+RUN rm -rf /libgpuarray
 ENV PYCUDA_VERSION 2017.1.1
 RUN pip download --no-cache-dir --no-deps pycuda && \
     tar xvf pycuda-$PYCUDA_VERSION.tar.gz && \
@@ -126,43 +139,50 @@ RUN pip download --no-cache-dir --no-deps pycuda && \
     python setup.py install && \
     cd / && rm -rf pycuda-$PYCUDA_VERSION*
 
-COPY make.inc /
-RUN hg clone https://bitbucket.org/icl/magma && cd magma && \
-    mv /make.inc . && \
-    make -j lib && make -j sparse-lib && make install prefix=/usr/local/magma && \
-    echo "/usr/local/magma/lib" >> /etc/ld.so.conf.d/magma.conf && ldconfig
+WORKDIR /magma
+RUN hg clone https://bitbucket.org/icl/magma .
+COPY ["make.inc", "magma_codegen.patch", "./"]
+RUN patch -p1 < magma_codegen.patch && \
+    make -j lib && make -j sparse-lib && make install prefix=/usr/local/magma
+WORKDIR /
+RUN echo "/usr/local/magma/lib" >> /etc/ld.so.conf.d/magma.conf && ldconfig && \
+    rm -rf /magma
 
-RUN git clone --branch=v0.4.0 --depth=1 --recursive https://github.com/pytorch/pytorch.git && \
-    cd pytorch && \
-    NCCL_ROOT_DIR=/usr/lib/x86_64-linux-gnu python setup.py install && \
-    cd / && rm -rf /pytorch
+WORKDIR /pytorch
+RUN git clone --depth=1 https://github.com/pytorch/pytorch.git . && \
+    git submodule update --init -j $(( $(nproc) + 1 )) && \
+    MAKEFLAGS=-j NCCL_ROOT_DIR=/usr/lib/x86_64-linux-gnu python setup.py install
+WORKDIR /
+RUN rm -rf /pytorch
 
-COPY mxnet_cuda_arch.patch /
-RUN git clone --branch=v1.2.0 --depth=1 --recursive https://github.com/apache/incubator-mxnet mxnet && \
-    cd mxnet && \
-    patch -p1 < /mxnet_cuda_arch.patch && \
+WORKDIR /mxnet
+RUN git clone --branch=v1.2.0 --depth=1 --recursive https://github.com/apache/incubator-mxnet .
+COPY mxnet_cuda_arch.patch ./
+RUN patch -p1 < mxnet_cuda_arch.patch && \
     make -j USE_OPENCV=1 USE_BLAS=openblas USE_CUDA=1 USE_CUDA_PATH=/usr/local/cuda USE_CUDNN=1 \
-        USE_NCCL=1 USE_NCCL_PATH=/usr/lib/x86_64-linux-gnu && \
-    cd python && python setup.py install && \
-    cd / && rm -rf /mxnet mxnet_cuda_arch.patch
+        USE_NCCL=1 USE_NCCL_PATH=/usr/lib/x86_64-linux-gnu
+RUN cd python && python setup.py install
+WORKDIR /
+RUN rm -rf /mxnet
 
-COPY Makefile.config /
-RUN git clone --branch=1.0 --depth=1 --recursive https://github.com/BVLC/caffe.git && \
-    cd caffe && \
-    mv /Makefile.config . && \
-    make -j all && \
-    make distribute && \
-    echo "/caffe/python" >> /usr/local/lib/python3.6/dist-packages/caffe.pth && \
-    cp ./distribute/lib/* /usr/lib/ && \
-    cp ./distribute/include/* /usr/include && \
-    cp ./distribute/bin/* /usr/bin/ && \
+WORKDIR /opt/caffe
+RUN git clone --branch=1.0 --depth=1 https://github.com/BVLC/caffe.git .
+COPY Makefile.config ./
+RUN make -j all && \
+    make distribute
+RUN echo "import sys\nsys.path.append('/opt/caffe/python')" >> \
+        /usr/local/lib/python3.6/dist-packages/caffe_path.py && \
+    cp -r ./distribute/lib/* /usr/lib/ && \
+    cp -r ./distribute/include/* /usr/include && \
+    cp -r ./distribute/bin/* /usr/bin/ && \
     ldconfig
+WORKDIR /
 
 COPY packages.r python-packages.txt /
 RUN pip install --no-cache-dir -r python-packages.txt && \
     Rscript packages.r && \
     git clone --branch=0.8.11 --depth=1 --recursive https://github.com/IRkernel/IRkernel.git && \
     Rscript -e "devtools::install_local('IRkernel'); IRkernel::installspec(user = FALSE)" && \
-    rm -rf IRkernel packages.r python-packages.txt
+    rm -rf IRkernel packages.r python-packages.txt /IRkernel
 
 EXPOSE 8888
