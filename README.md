@@ -1,6 +1,6 @@
 # Dockerfile for [NUS-MIT Datathon 2018](http://www.nus-datathon.com) server setup @ nscc
 
-### Run `jupyter`
+### Run Jupyter
 
 ```sh
 docker run \
@@ -19,7 +19,7 @@ docker run \
         --LabApp.ip='0.0.0.0'"
 ```
 
-Run `jupyter` @ nscc
+Run Jupyter @ nscc
 
 ```sh
 nvidia-docker-run --net=host kiend/datathon-nscc:cuda9.0-ubuntu16.04 << EOF
@@ -31,24 +31,23 @@ EOF
 ```
 
 ### Python
-Default `python` (`/opt/bin/python`) uses `python 3.6.5`.
+Default Python (`/opt/bin/python`) uses Python 3.6.5.
 
 #### Pre-installed frameworks:
-- `tensorflow`
-- `pytorch`
-- `mxnet`
-- `caffe`*
-- `caffe2`*
-- `theano`
-- `keras` (`keras-mxnet`)
-- `xgboost`
-- `pymc3`
-- Packages in the pydata stack: `numpy`, `scipy`, `pandas`, `sklearn`, `matplotlib`, ... Run `pip list` for the full list.
+- tensorflow
+- pytorch
+- mxnet
+- caffe*
+- caffe2*
+- theano
+- keras (keras-mxnet)
+- xgboost
+- pymc3
+- Packages in the Python data science stack: numpy, scipy, pandas, sklearn, matplotlib, ... Run `pip list` for the full list.
 
 To install other packages: `pip install --user <package_name>`
 
-\* *To use `caffe` or `caffe2`, first run `import caffe_path` or `import caffe2_path`. i.e.*
-
+\* *To use caffe or caffe2 in Python, first run `import caffe_path` or `import caffe2_path`, i.e.*
 ```python
 import caffe_path
 import caffe
@@ -58,21 +57,24 @@ import caffe
 import caffe2_path
 import caffe2
 ```
+*caffe CLI (`caffe.bin`) is available by default without any extra configuration.*
 
 ### R
-version `3.5.0`
+version 3.5.0
 #### Pre-installed packages:
-- `tidyverse`
-    - `dplyr`
-    - `tidyr`
-    - `ggplot2`
-    - ...
-- `data.table`
-- `xgboost`
-- `caret`
-- `rjags`
-- `tensorflow`
-- `keras`
-- ...
+- tidyverse
+    - dplyr
+    - tidyr
+    - ggplot2
+   - ...
+- data.table
+- xgboost
+- caret
+- rjags
+- tensorflow**
+- keras**
+- ... Run `installed.packages()` inside R for the full list.
 
-To install other packages: `install.packages("<packages_name>")`
+To install other packages: `install.packages("<packages_name>")`  
+
+** *tensorflow and keras for R have already been properly configured. There is no need to run `install_keras()` or `install_tensorflow()`.*
