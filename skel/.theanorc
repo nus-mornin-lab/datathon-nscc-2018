@@ -1,0 +1,3 @@
+[global]
+device=cuda
+floatX=float32
