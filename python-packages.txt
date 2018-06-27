@@ -16,3 +16,4 @@ graphviz
 onnx
 opencv-contrib-python
 pillow
+simpleitk
